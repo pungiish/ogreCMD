@@ -1,0 +1,76 @@
+{
+  "_from": "ogre",
+  "_id": "ogre@2.0.0",
+  "_inBundle": false,
+  "_integrity": "sha512-PwaN07tUMJnfqa6WP6zFeSjhOEgIsJ3ds9AZ9eeC3mjSbh1UvaAdeQhK7aPgztzIozvo2WBKWk+I+CTUpVsPnw==",
+  "_location": "/ogre",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "ogre",
+    "name": "ogre",
+    "escapedName": "ogre",
+    "rawSpec": "",
+    "saveSpec": null,
+    "fetchSpec": "latest"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/ogre/-/ogre-2.0.0.tgz",
+  "_shasum": "57b9696e019c3d01649b8ff0c8734a8b6972616b",
+  "_spec": "ogre",
+  "_where": "D:\\Downloads\\release-1900-x64-gdal-3-0-4-mapserver-7-4-3",
+  "author": {
+    "name": "Marc Harter",
+    "email": "wavded@gmail.com"
+  },
+  "bin": {
+    "ogre": "bin/ogre.js"
+  },
+  "bugs": {
+    "url": "https://github.com/wavded/ogre/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "body-parser": "^1.9.2",
+    "connect-multiparty": "^2.0.0",
+    "express": "^4.10.2",
+    "ogr2ogr": "^2.0.0",
+    "pug": "^2.0.0-rc.3"
+  },
+  "deprecated": false,
+  "description": "ogr2ogr web client",
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "prettier": "^1.19.1",
+    "supertest": "^4.0.2",
+    "tape": "^4.8.0"
+  },
+  "engines": {
+    "node": ">=10"
+  },
+  "homepage": "http://github.com/wavded/ogre",
+  "keywords": [
+    "ogr2ogr",
+    "GIS",
+    "GeoJSON"
+  ],
+  "main": "./index.js",
+  "name": "ogre",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/wavded/ogre.git"
+  },
+  "scripts": {
+    "fmt": "prettier --write \"**/*.{html,js,json,md}\"",
+    "lint": "eslint --max-warnings 0 bin test *.js",
+    "start": "node run.js",
+    "test": "tape \"test/*-test.js\""
+  },
+  "version": "2.0.0"
+}
