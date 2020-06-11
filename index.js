@@ -1,9 +1,8 @@
 const express = require('express')
-const multiparty = require('connect-multiparty')
 const ogr2ogr = require('ogr2ogr')
 const fs = require('fs')
-const urlencoded = require('body-parser').urlencoded
 const join = require('path').join
+var busboy = require('connect-busboy');
 
 function enableCors(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*')
@@ -14,7 +13,7 @@ function enableCors(req, res, next) {
 }
 
 function optionsHandler(methods) {
-  return function(req, res) {
+  return function (req, res) {
     res.header('Allow', methods)
     res.send(methods)
   }
@@ -32,9 +31,9 @@ function safelyParseJson(json) {
   }
 }
 
-function noop() {}
+function noop() { }
 
-exports.createServer = function(opts) {
+exports.createServer = function (opts) {
   if (!opts) opts = {}
 
   let app = express()
@@ -45,78 +44,91 @@ exports.createServer = function(opts) {
   app.options('/convertJson', enableCors, optionsHandler('POST'))
 
   app.use(express.static(join(__dirname, '/public')))
-  app.get('/', function(req, res) {
+  app.get('/', function (req, res) {
     res.render('home')
   })
 
-  app.use(urlencoded({extended: false, limit: 3000000})) // 3mb
-  app.use(multiparty({maxFilesSize: 100000000})) // 100mb
+  app.use(busboy());
 
-  app.post('/convert', enableCors, function(req, res, next) {
-    if (!req.files.upload || !req.files.upload.name) {
-      res.status(400).json({error: true, msg: 'No file provided'})
+  app.post('/convert', enableCors, function (req, res, next) {
+    console.dir(req.headers['content-type'])
+    req.busboy.on('file', function (fieldname, file, filename) {
+      console.log("Uploading: " + filename);
+      console.log("Uploading: " + fieldname);
+      console.log(req.busboy)
+      console.log("Uploading: " + file);
+      file.on('data', function(data) {
+        console.log('File [' + fieldname + '] got ' + data.length + ' bytes');
+        console.log(data);
+        let ogr = ogr2ogr(fieldname).options(['-sql', 'select *, ogr_style from entities']).env({ PROJ_LIB: 'C:\\Program Files\\GDAL\\projlib\\proj.db' });
+      });
+      file.on('end', function() {
+        console.log('File [' + fieldname + '] Finished');
+      });
+      ogr.timeout(50000)
+  
+      console.log(req)
+      console.log(ogr);
+      if (req.body.targetSrs) {
+        ogr.project(req.body.targetSrs, req.body.sourceSrs)
+      }
+  
+      if ('rfc7946' in req.body) {
+        ogr.options(['-lco', 'RFC7946=YES'])
+      }
+  
+      if ('skipFailures' in req.body) {
+        ogr.skipfailures()
+      }
+  
+      if (opts.timeout) {
+        ogr.timeout(opts.timeout)
+      }
+  
+      res.header(
+        'Content-Type',
+        'forcePlainText' in req.body
+          ? 'text/plain; charset=utf-8'
+          : 'application/json; charset=utf-8'
+      )
+  
+      if ('forceDownload' in req.body) {
+        res.attachment()
+      }
+  
+      ogr.exec(function (er, data) {
+        fs.unlink(req.files.upload.path, noop)
+  
+        if (isOgreFailureError(er)) {
+          return res
+            .status(400)
+            .json({ errors: er.message.replace('\n\n', '').split('\n') })
+        }
+  
+        if (er) return next(er)
+  
+        if (req.body.callback) res.write(req.body.callback + '(')
+        res.write(JSON.stringify(data))
+        if (req.body.callback) res.write(')')
+        res.end()
+      })
+    });
+    req.pipe(req.busboy);
+    /* if (!req.files.upload || !req.files.upload.name) {
+      res.status(400).json({ error: true, msg: 'No file provided' })
       return
     }
-
-    
-    let ogr = ogr2ogr(req.files.upload.path).options(['-sql', 'select *, ogr_style from entities']).env({PROJ_LIB: 'C:\\Program Files\\GDAL\\projlib\\proj.db'});
-    ogr.timeout(50000)
-
-
-    console.log(ogr);
-    if (req.body.targetSrs) {
-      ogr.project(req.body.targetSrs, req.body.sourceSrs)
-    }
-
-    if ('rfc7946' in req.body) {
-      ogr.options(['-lco', 'RFC7946=YES'])
-    }
-
-    if ('skipFailures' in req.body) {
-      ogr.skipfailures()
-    }
-
-    if (opts.timeout) {
-      ogr.timeout(opts.timeout)
-    }
-
-    res.header(
-      'Content-Type',
-      'forcePlainText' in req.body
-        ? 'text/plain; charset=utf-8'
-        : 'application/json; charset=utf-8'
-    )
-
-    if ('forceDownload' in req.body) {
-      res.attachment()
-    }
-
-    ogr.exec(function(er, data) {
-      fs.unlink(req.files.upload.path, noop)
-
-      if (isOgreFailureError(er)) {
-        return res
-          .status(400)
-          .json({errors: er.message.replace('\n\n', '').split('\n')})
-      }
-
-      if (er) return next(er)
-
-      if (req.body.callback) res.write(req.body.callback + '(')
-      res.write(JSON.stringify(data))
-      if (req.body.callback) res.write(')')
-      res.end()
-    })
+ */
   })
 
-  app.post('/convertJson', enableCors, function(req, res, next) {
+  app.post('/convertJson', enableCors, function (req, res, next) {
     if (!req.body.jsonUrl && !req.body.json)
-      return res.status(400).json({error: true, msg: 'No json provided'})
+      return res.status(400).json({ error: true, msg: 'No json provided' })
 
     let json = safelyParseJson(req.body.json)
 
     if (req.body.json && !json)
-      return res.status(400).json({error: true, msg: 'Invalid json provided'})
+      return res.status(400).json({ error: true, msg: 'Invalid json provided' })
 
     let ogr
 
@@ -140,11 +152,11 @@ exports.createServer = function(opts) {
 
     let format = req.body.format || 'shp'
 
-    ogr.format(format).exec(function(er, buf) {
+    ogr.format(format).exec(function (er, buf) {
       if (isOgreFailureError(er))
         return res
           .status(400)
-          .json({errors: er.message.replace('\n\n', '').split('\n')})
+          .json({ errors: er.message.replace('\n\n', '').split('\n') })
       if (er) return next(er)
       res.header('Content-Type', 'application/zip')
       res.header(
@@ -156,10 +168,10 @@ exports.createServer = function(opts) {
   })
 
   /* eslint no-unused-vars: [0, { "args": "none" }] */
-  app.use(function(er, req, res, next) {
+  app.use(function (er, req, res, next) {
     console.error(er.stack)
     res.header('Content-Type', 'application/json')
-    res.status(500).json({error: true, msg: er.message})
+    res.status(500).json({ error: true, msg: er.message })
   })
 
   return app
