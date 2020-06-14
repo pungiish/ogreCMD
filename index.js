@@ -44,7 +44,6 @@ exports.createServer = function (opts) {
   app.options('/convert', enableCors, optionsHandler('POST'))
   app.options('/convertJson', enableCors, optionsHandler('POST'))
   app.options('*', cors())
-
   app.use(express.static(join(__dirname, '/public')))
   app.get('/', function (req, res) {
     res.render('home')
