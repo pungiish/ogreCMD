@@ -43,7 +43,7 @@
     "express-busboy": "^8.0.0",
     "multer": "^1.4.2",
     "ogr2ogr": "^2.0.0",
-    "pug": "^2.0.0-rc.3"
+    "pug": "^3.0.1"
   },
   "deprecated": false,
   "description": "ogr2ogr web client",
